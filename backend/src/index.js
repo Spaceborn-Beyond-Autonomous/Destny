@@ -17,9 +17,10 @@ connectDB()
             throw err;
         })
         const server = http.createServer(app);
+        const origin = process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
         const io = new Server(server, {
             cors: {
-                origin: process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173",
+                origin: origin.replace(/\/$/, ""),
                 credentials: true,
             },
         });

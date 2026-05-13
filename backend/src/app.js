@@ -3,8 +3,10 @@ import cookieParser from "cookie-parser"
 import cors from "cors"
 const app = express()
 
+const origin = process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: origin.replace(/\/$/, ""),
     credentials: true
 }))
 app.use(express.json())
