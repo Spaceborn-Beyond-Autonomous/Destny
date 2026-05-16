@@ -60,9 +60,9 @@ router.route("/:orderId/file")
     .post(verifyJWT, verifyAdmin, attachFileToOrder)
     .delete(verifyJWT, verifyAdmin, deleteFile);
 
-// Payment routes (Admin controlled)
-router.route("/:orderId/payment/create-order").post(verifyJWT, verifyAdmin, createOrderPayment);
-router.route("/:orderId/payment/verify").post(verifyJWT, verifyAdmin, verifyOrderPayment);
-router.route("/:orderId/payment/fail").post(verifyJWT, verifyAdmin, markOrderPaymentFailed);
+// Payment routes
+router.route("/:orderId/payment/create-order").post(verifyJWT, createOrderPayment);
+router.route("/:orderId/payment/verify").post(verifyJWT, verifyOrderPayment);
+router.route("/:orderId/payment/fail").post(verifyJWT, markOrderPaymentFailed);
 
 export default router;
