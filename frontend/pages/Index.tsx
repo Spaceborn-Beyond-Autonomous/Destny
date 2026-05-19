@@ -10,23 +10,30 @@ import HireSection from "@/components/HireSection";
 import CTASection from "@/components/CTASection";
 import NewsletterSection from "@/components/NewsletterSection";
 import Footer from "@/components/Footer";
+import ResumeUploadDialog from "@/components/ResumeUploadDialog";
 
 const Index = () => {
   const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
+  const [isResumeOpen, setIsResumeOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <HeroSection onQuoteClick={() => setIsQuoteFormOpen(true)} />
+      <HeroSection 
+        onQuoteClick={() => setIsQuoteFormOpen(true)} 
+        onResumeClick={() => setIsResumeOpen(true)}
+      />
       <HeroProducts />
       <ServicesSection />
       <PricingArchitecture />
       <PrintingShowcase />
       <MVPSection />
-      <HireSection />
+      <HireSection onResumeClick={() => setIsResumeOpen(true)} />
       <CTASection isQuoteFormOpen={isQuoteFormOpen} onQuoteFormOpenChange={setIsQuoteFormOpen} />
       <NewsletterSection />
       <Footer />
+
+      <ResumeUploadDialog open={isResumeOpen} onOpenChange={setIsResumeOpen} />
     </div>
   );
 };

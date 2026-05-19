@@ -20,12 +20,13 @@ const drive = google.drive({ version: "v3", auth: oauth2Client });
  * @param {Buffer} fileBuffer - The file buffer to upload
  * @param {string} fileName - Original file name
  * @param {string} mimeType - MIME type of the file
+ * @param {string} [folderId] - Optional folder ID (defaults to GDRIVE_FOLDER_ID)
  * @returns {Object} Google Drive file metadata
  */
-const uploadToGDrive = async (fileBuffer, fileName, mimeType) => {
+const uploadToGDrive = async (fileBuffer, fileName, mimeType, folderId) => {
     const fileMetadata = {
         name: fileName,
-        parents: [process.env.GDRIVE_FOLDER_ID],
+        parents: [folderId || process.env.GDRIVE_FOLDER_ID],
     };
 
     const media = {

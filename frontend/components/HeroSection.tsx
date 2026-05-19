@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Box, Code2, Plane, Sparkles } from "lucide-react";
+import { ArrowRight, Box, Code2, Plane, Sparkles, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/mvp-team.jpg";
@@ -13,9 +13,10 @@ const highlights = [
 
 type HeroSectionProps = {
   onQuoteClick: () => void;
+  onResumeClick: () => void;
 };
 
-const HeroSection = ({ onQuoteClick }: HeroSectionProps) => {
+const HeroSection = ({ onQuoteClick, onResumeClick }: HeroSectionProps) => {
   return (
     <section id="home" className="relative min-h-[92vh] flex items-center pt-24 overflow-hidden">
       <div className="absolute inset-0">
@@ -41,14 +42,23 @@ const HeroSection = ({ onQuoteClick }: HeroSectionProps) => {
             Destny brings 3D printing, AI automation, MVP development, drone software, campus workshops, talent programs, and growth support under one trusted roof.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 mt-9">
-            <Link to="/#contact" onClick={onQuoteClick}>
-              <Button size="lg" className="glow-primary gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 mt-9">
+            <Link to="/#contact" onClick={onQuoteClick} className="w-full sm:w-auto">
+              <Button size="lg" className="glow-primary gap-2 w-full">
                 Get a Same-Day Quote <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/3d-printing">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={onResumeClick} 
+              className="w-full sm:w-auto gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/60 transition-all duration-300 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] group"
+            >
+              <Upload className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+              <span>Share Your Resume</span>
+            </Button>
+            <Link to="/3d-printing" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="w-full">
                 Explore 3D Printing
               </Button>
             </Link>

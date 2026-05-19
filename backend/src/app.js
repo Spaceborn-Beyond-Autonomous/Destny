@@ -26,12 +26,14 @@ import uploadRouter from "./routes/upload.routes.js"
 import orderRouter from "./routes/order.routes.js"
 import quoteRouter from "./routes/quote.routes.js"
 import customerRouter from "./routes/customer.routes.js"
+import resumeRouter from "./routes/resume.routes.js"
 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/upload", uploadRouter)
 app.use("/api/v1/orders", orderRouter)
 app.use("/api/v1/quotes", quoteRouter)
 app.use("/api/v1/customers", customerRouter)
+app.use("/api/v1/resume", resumeRouter)
 
 // Global error handler
 app.use((err, req, res, next) => {
