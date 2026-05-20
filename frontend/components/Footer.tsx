@@ -49,6 +49,9 @@ const Footer = () => (
           <p className="text-sm text-muted-foreground mt-4 max-w-sm">
             Destny is a full-service technology company founded by Adarsh Kumar, helping India&apos;s students, founders, SMEs, colleges, and creators build what they imagine.
           </p>
+          <div className="mt-5">
+            <a href="mailto:adarshkumar@spaceborn.in" className="footer-newsletter-btn">Contact Our CEO</a>
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-8">
