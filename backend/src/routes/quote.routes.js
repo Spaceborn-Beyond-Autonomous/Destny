@@ -11,10 +11,12 @@ import {
 } from "../controllers/quote.controller.js";
 import { verifyJWT, verifyAdmin } from "../middlewares/auth.middleware.js";
 
+import { quoteSubmitLimiter } from "../middlewares/rateLimiter.middleware.js";
+
 const router = Router();
 
 // Public route
-router.route("/submit").post(submitQuoteRequest);
+router.route("/submit").post(quoteSubmitLimiter, submitQuoteRequest);
 
 // Admin routes
 router.route("/").get(verifyJWT, verifyAdmin, getQuotes);

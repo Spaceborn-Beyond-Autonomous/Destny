@@ -2,6 +2,7 @@ import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import helmet from "helmet"
+import { generalApiLimiter } from "./middlewares/rateLimiter.middleware.js"
 const app = express()
 
 const origin = process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
@@ -22,6 +23,7 @@ app.use(express.urlencoded({
 }))
 app.use(express.static("public"))
 app.use(cookieParser())
+app.use("/api", generalApiLimiter)
 
 app.get("/", (req, res) => {
   res.send("Backend is live ✅");
