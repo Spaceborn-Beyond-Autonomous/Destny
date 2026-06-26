@@ -1,18 +1,24 @@
 import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
+import helmet from "helmet"
 const app = express()
 
 const origin = process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
+
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false,
+}))
 
 app.use(cors({
     origin: origin.replace(/\/$/, ""),
     credentials: true
 }))
-app.use(express.json())
+app.use(express.json({ limit: "50kb" }))
 app.use(express.urlencoded({
     extended: true,
-    limit: "10000kb"
+    limit: "50kb"
 }))
 app.use(express.static("public"))
 app.use(cookieParser())
