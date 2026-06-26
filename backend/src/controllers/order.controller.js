@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { getSocketServer } from "../socket.js";
+import { deleteFromGDrive } from "../services/gdrive.service.js";
 import {
     createPaymentOrder,
     failPaymentOrder,
@@ -250,12 +251,12 @@ const buildDashboardPayload = async () => {
             filesRaw: (orders || []).slice(0, 20),
             customers: customerStats.map((stat) => {
                 if (!stat) return ["-", "Unknown", "Individual", "Direct", "0", "₹0", "Active"];
-                const profile = (customersRaw || []).find(c => 
+                const profile = (customersRaw || []).find(c =>
                     (c?.email && stat?.email && String(c.email).toLowerCase() === String(stat.email).toLowerCase()) ||
-                    (c?._id && stat?._id && String(c._id) === String(stat._id)) || 
+                    (c?._id && stat?._id && String(c._id) === String(stat._id)) ||
                     (c?.name && stat?.name && c.name === stat.name)
                 );
-                
+
                 return [
                     stat._id ? String(stat._id).slice(-6).toUpperCase() : "GUEST",
                     stat.name || "Guest Customer",
@@ -267,13 +268,13 @@ const buildDashboardPayload = async () => {
                 ];
             }),
             customersRaw: customerStats.map(stat => {
-                 if (!stat) return {};
-                 const profile = (customersRaw || []).find(c => 
+                if (!stat) return {};
+                const profile = (customersRaw || []).find(c =>
                     (c?.email && stat?.email && String(c.email).toLowerCase() === String(stat.email).toLowerCase()) ||
-                    (c?._id && stat?._id && String(c._id) === String(stat._id)) || 
+                    (c?._id && stat?._id && String(c._id) === String(stat._id)) ||
                     (c?.name && stat?.name && c.name === stat.name)
-                 );
-                 return { ...stat, profile: profile || null };
+                );
+                return { ...stat, profile: profile || null };
             }),
             printers: [],
             notifications: notifications || [],
@@ -375,9 +376,12 @@ const getOrders = asyncHandler(async (_req, res) => {
 
 const getCustomerOrdersForAdmin = asyncHandler(async (req, res) => {
     const { mode, customerKey } = req.params;
-    const decodedKey = decodeURIComponent(customerKey || "");
 
-    if (!decodedKey) {
+    // Fix 11 — sanitize customerKey: cast to plain string, strip to safe characters only
+    const decodedKey = String(decodeURIComponent(customerKey || "")).trim();
+    const safeKey = decodedKey.replace(/[^\w\s@.\-]/g, "");
+
+    if (!safeKey) {
         throw new ApiError(400, "Customer identifier is required");
     }
 
@@ -386,11 +390,11 @@ const getCustomerOrdersForAdmin = asyncHandler(async (req, res) => {
     }
 
     let query = mode === "user"
-        ? { customerId: decodedKey }
-        : { customerName: decodedKey };
+        ? { customerId: safeKey }
+        : { customerName: safeKey };
 
     if (mode === "email") {
-        const email = decodedKey.toLowerCase();
+        const email = safeKey.toLowerCase();
         const user = await User.findOne({ email }).select("_id").lean();
         query = {
             $or: [
@@ -401,7 +405,7 @@ const getCustomerOrdersForAdmin = asyncHandler(async (req, res) => {
     }
 
     const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
-    const quoteEmail = mode === "email" ? decodedKey.toLowerCase() : orders[0]?.customerEmail;
+    const quoteEmail = mode === "email" ? safeKey.toLowerCase() : orders[0]?.customerEmail;
     const quotes = quoteEmail
         ? await Quote.find({ email: quoteEmail }).sort({ createdAt: -1 }).lean()
         : [];
@@ -414,10 +418,10 @@ const getCustomerOrdersForAdmin = asyncHandler(async (req, res) => {
             200,
             {
                 customer: {
-                    id: decodedKey,
+                    id: safeKey,
                     mode,
-                    name: orders[0]?.customerName || quotes[0]?.name || decodedKey,
-                    email: quoteEmail || decodedKey,
+                    name: orders[0]?.customerName || quotes[0]?.name || safeKey,
+                    email: quoteEmail || safeKey,
                     totalOrders: orders.length,
                     totalQuotes: quotes.length,
                     activeOrders,
@@ -433,21 +437,11 @@ const getCustomerOrdersForAdmin = asyncHandler(async (req, res) => {
 });
 
 const getDashboardData = asyncHandler(async (_req, res) => {
-    try {
-        const dashboard = await buildDashboardPayload();
-        return res
-            .status(200)
-            .json(new ApiResponse(200, dashboard, "Dashboard data fetched successfully"));
-    } catch (error) {
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Dashboard aggregation failed",
-                error: error.message,
-                stack: error.stack
-            });
-    }
+    // Fix 9 — removed error.stack from response body
+    const dashboard = await buildDashboardPayload();
+    return res
+        .status(200)
+        .json(new ApiResponse(200, dashboard, "Dashboard data fetched successfully"));
 });
 
 const createOrderPayment = asyncHandler(async (req, res) => {
@@ -464,7 +458,7 @@ const createOrderPayment = asyncHandler(async (req, res) => {
 
     if (order.orderStatus !== "approved") {
         throw new ApiError(400, "Order must be approved by admin before payment can be initiated");
-    }   
+    }
 
     const paymentOrder = await createPaymentOrder(order);
 
@@ -715,6 +709,11 @@ const setPaid = asyncHandler(async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) throw new ApiError(404, "Order not found");
 
+    // Fix 7c — idempotency guard for manual payment
+    if (order.paid) {
+        throw new ApiError(409, "Order is already marked as paid");
+    }
+
     order.paid = true;
     order.paymentStatus = "paid";
     order.paymentOrderId = "MANUAL_PAYMENT";
@@ -739,6 +738,11 @@ const getOrderById = asyncHandler(async (req, res) => {
     const order = await Order.findById(orderId).lean();
     if (!order) throw new ApiError(404, "Order not found");
 
+    // Fix 8 — ownership check: non-admin users can only fetch their own orders
+    if (!req.user.admin && String(order.customerId) !== String(req.user._id)) {
+        throw new ApiError(403, "Access denied");
+    }
+
     return res
         .status(200)
         .json(new ApiResponse(200, order, "Order fetched successfully"));
@@ -752,6 +756,7 @@ const deleteFile = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Order not found");
     }
 
+    // Fix 12 — deleteFromGDrive is now imported at the top of the file
     if (order.gdriveFileId) {
         try {
             await deleteFromGDrive(order.gdriveFileId);
@@ -789,7 +794,7 @@ const attachFileToOrder = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Order not found");
     }
 
-    // If there was an old file, delete it
+    // Fix 12 — deleteFromGDrive is now imported at the top of the file
     if (order.gdriveFileId) {
         try {
             await deleteFromGDrive(order.gdriveFileId);
