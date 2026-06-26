@@ -43,10 +43,16 @@ app.use("/api/v1/quotes", quoteRouter)
 app.use("/api/v1/customers", customerRouter)
 app.use("/api/v1/resume", resumeRouter)
 
-// Global error handler
+// Global error handler — replaces errorHandler.js (which imports a non-existent errorResponse)
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;
-    const message = err.message || "Something went wrong";
+    const message = (process.env.NODE_ENV === "production" && statusCode === 500)
+        ? "Internal server error"
+        : (err.message || "Something went wrong");
+
+    if (process.env.NODE_ENV !== "test") {
+        console.error(err);
+    }
 
     return res.status(statusCode).json({
         success: false,

@@ -17,7 +17,7 @@ const assertQuoteAccess = async (quoteId, user) => {
 const submitQuoteRequest = asyncHandler(async (req, res) => {
     const { name, email, projectDescription, budget, technicalSpecifications, source } = req.body;
 
-    if ([name, email, projectDescription, budget].some((field) => field?.trim() === "")) {
+    if ([name, email, projectDescription, budget].some((field) => !field || !String(field).trim())) {
         throw new ApiError(400, "All required fields must be provided");
     }
 
