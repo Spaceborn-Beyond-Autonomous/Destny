@@ -23,6 +23,17 @@ const getRazorpayInstance = () => {
 };
 
 const createPaymentOrder = async (order) => {
+    // Idempotency guard — if a Razorpay order already exists and payment is not failed, reuse it
+    if (order.paymentOrderId && order.paymentStatus !== "failed") {
+        const amountInPaise = Math.round(Number(order.estimatedTotal || 0) * 100);
+        return {
+            amount: amountInPaise,
+            currency: "INR",
+            razorpayOrderId: order.paymentOrderId,
+            keyId: process.env.RAZORPAY_KEY_ID,
+        };
+    }
+
     const amountInPaise = Math.round(Number(order.estimatedTotal || 0) * 100);
     if (!Number.isFinite(amountInPaise) || amountInPaise <= 0) {
         throw new ApiError(400, "Order amount is invalid");
@@ -62,6 +73,16 @@ const verifyPaymentOrder = async ({
 }) => {
     if (!razorpayPaymentId || !razorpayOrderId) {
         throw new ApiError(400, "Payment details are required");
+    }
+
+    // Idempotency guard — if this payment ID was already verified, do not process again
+    if (order.paymentStatus === "paid" && order.paymentId === razorpayPaymentId) {
+        return order;
+    }
+
+    // Reject if order is already paid with a different payment ID (replay with different ID)
+    if (order.paymentStatus === "paid") {
+        throw new ApiError(409, "Order is already paid");
     }
 
     if (order.paymentOrderId && order.paymentOrderId !== razorpayOrderId) {
