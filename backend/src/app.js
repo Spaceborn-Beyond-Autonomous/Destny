@@ -16,6 +16,7 @@ app.use(cors({
     origin: origin.replace(/\/$/, ""),
     credentials: true
 }))
+app.use("/api/v1/orders/webhook/razorpay", express.raw({ type: "application/json" }))
 app.use(express.json({ limit: "50kb" }))
 app.use(express.urlencoded({
     extended: true,
@@ -35,10 +36,12 @@ import orderRouter from "./routes/order.routes.js"
 import quoteRouter from "./routes/quote.routes.js"
 import customerRouter from "./routes/customer.routes.js"
 import resumeRouter from "./routes/resume.routes.js"
+import webhookRouter from "./routes/webhook.routes.js"
 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/upload", uploadRouter)
 app.use("/api/v1/orders", orderRouter)
+app.use("/api/v1/webhook", webhookRouter)
 app.use("/api/v1/quotes", quoteRouter)
 app.use("/api/v1/customers", customerRouter)
 app.use("/api/v1/resume", resumeRouter)
