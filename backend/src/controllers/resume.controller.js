@@ -28,14 +28,12 @@ const uploadResume = asyncHandler(async (req, res) => {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const driveFileName = `Resume_${timestamp}_${req.file.originalname}`;
+    const safeOriginalName = req.file.originalname
+        .replace(/[^\w.\-]/g, "_")
+        .slice(0, 100);
+    const driveFileName = `Resume_${timestamp}_${safeOriginalName}`;
 
     const folderId = process.env.GDRIVE_RESUME_FOLDER_ID || process.env.GDRIVE_FOLDER_ID;
-    console.log("--- Resume Upload Debug ---");
-    console.log("Original File Name:", req.file.originalname);
-    console.log("Drive File Name:", driveFileName);
-    console.log("Target GDrive Folder ID:", folderId);
-    console.log("---------------------------");
 
     const gdriveData = await uploadToGDrive(
         req.file.buffer,

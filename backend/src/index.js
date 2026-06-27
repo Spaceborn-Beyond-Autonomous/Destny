@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import connectDB from "./db/index.js"
 import { app } from "./app.js"
 import { setSocketServer } from "./socket.js";
+import { socketAuthMiddleware } from "./middlewares/socketAuth.middleware.js";
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
@@ -24,6 +25,15 @@ connectDB()
                 credentials: true,
             },
         });
+
+        io.use(socketAuthMiddleware);
+
+        io.on("connection", (socket) => {
+            if (socket.user?.admin) {
+                socket.join("admin");
+            }
+        });
+
         setSocketServer(io);
 
         const PORTT = process.env.PORT || 4000

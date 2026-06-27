@@ -341,7 +341,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:created", {
+        io.to("admin").emit("order:created", {
             order: {
                 id: order._id,
                 material: order.material,
@@ -506,7 +506,7 @@ const verifyOrderPayment = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:paid", {
+        io.to("admin").emit("order:paid", {
             order: {
                 id: order._id,
                 paymentId: order.paymentId,
@@ -539,7 +539,7 @@ const markOrderPaymentFailed = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:payment_failed", {
+        io.to("admin").emit("order:payment_failed", {
             order: {
                 id: order._id,
                 paymentOrderId: order.paymentOrderId,
@@ -582,7 +582,7 @@ const updateOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -601,7 +601,7 @@ const deleteOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:deleted", { orderId, dashboard });
+        io.to("admin").emit("order:deleted", { orderId, dashboard });
     }
 
     return res
@@ -625,7 +625,7 @@ const approveOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -650,7 +650,7 @@ const rejectOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -673,7 +673,7 @@ const setDelivering = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -696,7 +696,7 @@ const completeOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -725,7 +725,7 @@ const setPaid = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -773,7 +773,7 @@ const deleteFile = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
@@ -811,7 +811,7 @@ const attachFileToOrder = asyncHandler(async (req, res) => {
     const io = getSocketServer();
     if (io) {
         const dashboard = await buildDashboardPayload();
-        io.emit("order:updated", { order, dashboard });
+        io.to("admin").emit("order:updated", { order, dashboard });
     }
 
     return res
