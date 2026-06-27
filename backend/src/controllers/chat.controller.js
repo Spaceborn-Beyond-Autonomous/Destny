@@ -122,7 +122,8 @@ const sendOrderChatMessage = asyncHandler(async (req, res) => {
     const payload = message.toObject();
     const io = getSocketServer();
     if (io) {
-        io.emit("chat:message", { orderId, message: payload });
+        io.to("admin").emit("chat:message", { orderId, message: payload });
+        io.to(`order:${orderId}`).emit("chat:message", { orderId, message: payload });
     }
 
     return res
@@ -142,7 +143,8 @@ const markOrderChatRead = asyncHandler(async (req, res) => {
 
     const io = getSocketServer();
     if (io) {
-        io.emit("chat:read", { orderId, readerRole: viewerRole, userId: req.user._id });
+        io.to("admin").emit("chat:read", { orderId, readerRole: viewerRole, userId: req.user._id });
+        io.to(`order:${orderId}`).emit("chat:read", { orderId, readerRole: viewerRole, userId: req.user._id });
     }
 
     return res

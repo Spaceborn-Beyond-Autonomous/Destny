@@ -31,6 +31,17 @@ connectDB()
         io.on("connection", (socket) => {
             if (socket.user?.admin) {
                 socket.join("admin");
+            } else {
+                socket.on("join:order", (orderId) => {
+                    if (typeof orderId === "string" && orderId.trim()) {
+                        socket.join(`order:${orderId.trim()}`);
+                    }
+                });
+                socket.on("join:quote", (quoteId) => {
+                    if (typeof quoteId === "string" && quoteId.trim()) {
+                        socket.join(`quote:${quoteId.trim()}`);
+                    }
+                });
             }
         });
 

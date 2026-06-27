@@ -124,6 +124,10 @@ const sendQuoteChatMessage = asyncHandler(async (req, res) => {
     const text = String(req.body?.message || "").trim();
     if (!text) throw new ApiError(400, "Message is required");
 
+    if (text.length > 2000) {
+        throw new ApiError(400, "Message must be 2000 characters or fewer");
+    }
+
     await assertQuoteAccess(quoteId, req.user);
 
     const message = await QuoteChatMessage.create({
@@ -137,7 +141,8 @@ const sendQuoteChatMessage = asyncHandler(async (req, res) => {
     const payload = message.toObject();
     const io = getSocketServer();
     if (io) {
-        io.emit("quote:chat:message", { quoteId, message: payload });
+        io.to("admin").emit("quote:chat:message", { quoteId, message: payload });
+        io.to(`quote:${quoteId}`).emit("quote:chat:message", { quoteId, message: payload });
     }
 
     return res

@@ -73,7 +73,12 @@ const OrderChat = ({ orderId, orderLabel, isAdmin = false, onRead }: OrderChatPr
       withCredentials: true,
     });
 
-    socket.on("connect", () => setConnected(true));
+    socket.on("connect", () => {
+      setConnected(true);
+      if (!isAdmin) {
+        socket.emit("join:order", orderId);
+      }
+    });
     socket.on("disconnect", () => setConnected(false));
     socket.on("connect_error", () => setConnected(false));
     socket.on("chat:message", (payload: { orderId?: string; message?: ChatMessage }) => {

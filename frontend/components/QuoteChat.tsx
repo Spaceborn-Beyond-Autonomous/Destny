@@ -54,7 +54,13 @@ const QuoteChat = ({ quoteId, quoteLabel, isAdmin = false }: QuoteChatProps) => 
       withCredentials: true,
     });
 
-    socket.on("connect", () => setConnected(true));
+    socket.on("connect", () => {
+      setConnected(true);
+      if (!isAdmin) {
+        socket.emit("join:quote", quoteId);
+      }
+    });
+    
     socket.on("disconnect", () => setConnected(false));
     socket.on("connect_error", () => setConnected(false));
     socket.on("quote:chat:message", (payload: { quoteId?: string; message?: QuoteChatMessage }) => {
