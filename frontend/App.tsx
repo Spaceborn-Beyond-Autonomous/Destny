@@ -14,21 +14,6 @@ import Orders from "@/pages/Orders";
 import YourQuotes from "@/pages/YourQuotes";
 import AdminRoute from "./components/AdminRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
-import axios from "axios";
-
-// Configure axios interceptor to attach the access token to requests
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 const queryClient = new QueryClient();
 

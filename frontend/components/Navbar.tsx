@@ -46,7 +46,6 @@ const Navbar = () => {
     } catch {
       // even if the request fails, clear local state
     }
-    localStorage.removeItem("accessToken");
     setIsLoggedIn(false);
     navigate("/");
   };

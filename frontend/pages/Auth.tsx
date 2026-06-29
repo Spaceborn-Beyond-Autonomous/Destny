@@ -30,9 +30,6 @@ const Auth = () => {
         }, {
           withCredentials: true
         });
-        if (response.data?.data?.accessToken) {
-          localStorage.setItem("accessToken", response.data.data.accessToken);
-        }
         toast({
           title: "Success",
           description: "Logged in successfully",
