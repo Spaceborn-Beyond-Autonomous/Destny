@@ -12,6 +12,9 @@ import AdminCustomerOrders from "@/pages/AdminCustomerOrders";
 import NotFound from "@/pages/NotFound";
 import Orders from "@/pages/Orders";
 import YourQuotes from "@/pages/YourQuotes";
+import FreelancePage from "@/pages/FreelancePage";
+import FreelanceJobs from "@/pages/FreelanceJobs";
+import FreelanceFreelancers from "@/pages/FreelanceFreelancers";
 import AdminRoute from "./components/AdminRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -45,12 +48,14 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/3d-printing" element={<ProtectedRoute><Printing3D /></ProtectedRoute>} />
+          <Route path="/freelance" element={<FreelancePage />} />
+          <Route path="/freelance/jobs" element={<FreelanceJobs />} />
+          <Route path="/freelance/freelancers" element={<FreelanceFreelancers />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/dashboard/customers/:mode/:customerKey/orders" element={<AdminRoute><AdminCustomerOrders /></AdminRoute>} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="/quotes" element={<ProtectedRoute><YourQuotes /></ProtectedRoute>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
