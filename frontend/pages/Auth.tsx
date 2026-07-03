@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowLeft, ArrowRight, Chrome, Github, Eye, EyeOff } from "lucide-react";
-import axios from "axios";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const mode = searchParams.get('mode') || 'login';
+  const redirect = searchParams.get('redirect') || '/freelance';
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +22,6 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,6 +32,9 @@ const Auth = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     if (!isLogin && password !== confirmPassword) {
       setError("Passwords do not match");
@@ -44,54 +47,40 @@ const Auth = () => {
       return;
     }
 
+    // ✅ ALWAYS ACCEPT - Mock successful login/signup
     try {
-      if (isLogin) {
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/loginUser`,
-          { email, password },
-          { withCredentials: true }
-        );
-        
-        if (response.data?.data) {
-          localStorage.setItem('user_data', JSON.stringify(response.data.data));
-          localStorage.setItem('auth_token', response.data.token || '');
-        }
-        
-        toast({
-          title: "Welcome back! 👋",
-          description: "Logged in successfully",
-        });
-        
-        const redirectTo = searchParams.get('redirect') || '/freelance';
-        navigate(redirectTo);
-      } else {
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/register`,
-          {
-            name: fullName,
-            email,
-            password
-          }
-        );
-        
-        toast({
-          title: "Account created! 🎉",
-          description: "You can now sign in with your credentials.",
-        });
-        
-        setFullName("");
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        setIsLogin(true);
-        navigate('/auth?mode=login');
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || "Something went wrong";
-      setError(errorMessage);
+      // Create user data
+      const userData = {
+        id: '1',
+        name: isLogin ? email.split('@')[0] : fullName || email.split('@')[0],
+        email: email,
+        role: 'client',
+        avatar: (isLogin ? email.split('@')[0] : fullName || email.split('@')[0])
+          .split(' ')
+          .map((n: string) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2)
+      };
+
+      // Store user data in localStorage
+      localStorage.setItem('auth_token', 'mock_token_' + Date.now());
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      
+      toast({
+        title: isLogin ? "Welcome back! 👋" : "Account created! 🎉",
+        description: isLogin 
+          ? `Logged in as ${userData.name}` 
+          : `Welcome ${userData.name}! Your account has been created.`,
+      });
+      
+      // Redirect to the intended page (dashboard if coming from Post a Job)
+      navigate(redirect);
+    } catch (err: any) {
+      setError("Something went wrong. Please try again.");
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -100,11 +89,47 @@ const Auth = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth/google`;
+    // Mock Google login - always successful
+    setLoading(true);
+    setTimeout(() => {
+      const userData = {
+        id: 'google_' + Date.now(),
+        name: 'Google User',
+        email: 'user@gmail.com',
+        role: 'client',
+        avatar: 'GU'
+      };
+      localStorage.setItem('auth_token', 'google_mock_token_' + Date.now());
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      toast({
+        title: "Welcome! 👋",
+        description: "Logged in with Google successfully",
+      });
+      navigate(redirect);
+      setLoading(false);
+    }, 800);
   };
 
   const handleGithubLogin = () => {
-    window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth/github`;
+    // Mock GitHub login - always successful
+    setLoading(true);
+    setTimeout(() => {
+      const userData = {
+        id: 'github_' + Date.now(),
+        name: 'GitHub User',
+        email: 'user@github.com',
+        role: 'client',
+        avatar: 'GU'
+      };
+      localStorage.setItem('auth_token', 'github_mock_token_' + Date.now());
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      toast({
+        title: "Welcome! 👋",
+        description: "Logged in with GitHub successfully",
+      });
+      navigate(redirect);
+      setLoading(false);
+    }, 800);
   };
 
   return (
@@ -142,6 +167,9 @@ const Auth = () => {
                   ? "Sign in to your Destny Freelance account" 
                   : "Join Destny Freelance Marketplace"}
               </CardDescription>
+              <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5">
+                🔧 Demo Mode: Any credentials will work
+              </div>
             </CardHeader>
             
             <CardContent>
@@ -165,7 +193,7 @@ const Auth = () => {
                         value={fullName} 
                         onChange={(e) => setFullName(e.target.value)} 
                         className="pl-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all"
-                        required 
+                        required={!isLogin}
                       />
                     </div>
                   </div>
@@ -203,7 +231,7 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)} 
                       className="pl-10 pr-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all"
                       required 
-                      minLength={6} 
+                      minLength={3} 
                     />
                     <button
                       type="button"
@@ -213,6 +241,9 @@ const Auth = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Any password works in demo mode
+                  </p>
                 </div>
                 
                 {!isLogin && (
@@ -229,8 +260,8 @@ const Auth = () => {
                         value={confirmPassword} 
                         onChange={(e) => setConfirmPassword(e.target.value)} 
                         className="pl-10 pr-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all"
-                        required 
-                        minLength={6} 
+                        required={!isLogin} 
+                        minLength={3} 
                       />
                       <button
                         type="button"
@@ -248,7 +279,7 @@ const Auth = () => {
                     <button 
                       type="button"
                       className="text-xs text-primary hover:underline"
-                      onClick={() => toast({ title: "Reset Password", description: "Password reset link sent to your email" })}
+                      onClick={() => toast({ title: "Reset Password", description: "Password reset link sent to your email (Demo)" })}
                     >
                       Forgot password?
                     </button>
@@ -317,6 +348,9 @@ const Auth = () => {
                   >
                     {isLogin ? "Sign up" : "Sign in"}
                   </button>
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Demo: Use any email and password (min 3 characters)
                 </p>
               </div>
             </CardContent>

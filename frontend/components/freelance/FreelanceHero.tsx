@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Search, Briefcase, Users, Sparkles, Code2, Box, Plane } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Briefcase, Users, Sparkles, Code2, Box, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const highlights = [
   { icon: Box, label: "3D printing from ₹8/g" },
@@ -11,6 +12,31 @@ const highlights = [
 ];
 
 const FreelanceHero: React.FC = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handlePostJob = () => {
+    // Check if user is logged in
+    const token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+      // Not logged in - redirect to login with redirect parameter
+      toast({
+        title: "Please login first",
+        description: "You need to be logged in to post a job.",
+        variant: "destructive",
+      });
+      navigate('/auth?mode=login&redirect=/freelance/dashboard');
+    } else {
+      // Logged in - go to dashboard
+      navigate('/freelance/dashboard');
+    }
+  };
+
+  const handleBrowseWork = () => {
+    navigate('/freelance/jobs');
+  };
+
   return (
     <section className="relative min-h-[80vh] flex items-center pt-24 overflow-hidden bg-gradient-to-b from-background/40 via-background/70 to-background">
       <div className="container mx-auto px-6 relative z-10">
@@ -20,7 +46,15 @@ const FreelanceHero: React.FC = () => {
           transition={{ duration: 0.7 }}
           className="max-w-4xl mx-auto text-center"
         >
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mt-6">
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            <span className="text-xs font-medium text-primary">Now live · Destny Freelance Marketplace</span>
+          </div>
+          
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
             The right hands <br />
             <span className="text-gradient-primary">for every Destny</span> project.
           </h1>
@@ -30,11 +64,20 @@ const FreelanceHero: React.FC = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center mt-8">
-            <Button size="lg" className="glow-primary gap-2">
+            <Button 
+              size="lg" 
+              className="glow-primary gap-2"
+              onClick={handlePostJob}
+            >
               <Briefcase className="h-4 w-4" />
               Post a Job
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/60 transition-all duration-300">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/60 transition-all duration-300"
+              onClick={handleBrowseWork}
+            >
               <Users className="h-4 w-4" />
               Browse Work
             </Button>

@@ -7,13 +7,14 @@ import {
   Briefcase, 
   Users, 
   LogIn, 
-  UserRoundPlus,  // Fixed: Changed from UserPlus
+  UserRoundPlus,
   ChevronDown,
   Home,
   User,
   Settings,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  PlusCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -102,6 +103,24 @@ const FreelanceNavbar = () => {
     }
   };
 
+  const handlePostJob = () => {
+    // Check if user is logged in
+    const token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+      // Not logged in - redirect to login with redirect parameter
+      toast({
+        title: "Please login first",
+        description: "You need to be logged in to post a job.",
+        variant: "destructive",
+      });
+      navigate('/auth?mode=login&redirect=/freelance/dashboard');
+    } else {
+      // Logged in - go to dashboard
+      navigate('/freelance/dashboard');
+    }
+  };
+
   const isActive = (path: string) => {
     if (path === '/freelance' && location.pathname === '/freelance') return true;
     if (path !== '/freelance' && location.pathname.startsWith(path)) return true;
@@ -165,10 +184,33 @@ const FreelanceNavbar = () => {
               {link.label}
             </Link>
           ))}
+          {isLoggedIn && (
+            <Link
+              to="/freelance/dashboard"
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                isActive('/freelance/dashboard')
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Link>
+          )}
         </div>
 
         {/* Right side buttons */}
         <div className="hidden md:flex items-center gap-3">
+          {/* Post a Job Button */}
+          <Button 
+            size="sm" 
+            className="glow-primary gap-2"
+            onClick={handlePostJob}
+          >
+            <PlusCircle className="h-4 w-4" />
+            Post a Job
+          </Button>
+
           {loading ? (
             <div className="w-20 h-9 bg-muted/30 rounded-full animate-pulse"></div>
           ) : isLoggedIn && user ? (
@@ -202,21 +244,21 @@ const FreelanceNavbar = () => {
                     </div>
                     
                     <Link
+                      to="/freelance/dashboard"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                    
+                    <Link
                       to="/profile"
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <User className="h-4 w-4" />
                       Profile
-                    </Link>
-                    
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
                     </Link>
                     
                     <Link
@@ -251,7 +293,7 @@ const FreelanceNavbar = () => {
               </Link>
               <Link to="/auth?mode=signup">
                 <Button size="sm" className="glow-primary gap-2">
-                  <UserRoundPlus className="h-4 w-4" />  {/* Fixed: Changed from UserPlus */}
+                  <UserRoundPlus className="h-4 w-4" />
                   Get started
                 </Button>
               </Link>
@@ -295,8 +337,35 @@ const FreelanceNavbar = () => {
                   {link.label}
                 </Link>
               ))}
+              
+              {isLoggedIn && (
+                <Link
+                  to="/freelance/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive('/freelance/dashboard')
+                      ? 'text-primary bg-primary/5'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
+                  }`}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              )}
 
               <div className="border-t border-border/50 my-2"></div>
+
+              {/* Post a Job - Mobile */}
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handlePostJob();
+                }}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Post a Job
+              </button>
 
               {/* Auth Section */}
               {loading ? (
@@ -320,12 +389,12 @@ const FreelanceNavbar = () => {
                   </Link>
                   
                   <Link
-                    to="/dashboard"
+                    to="/settings"
                     className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/10 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
+                    <Settings className="h-4 w-4" />
+                    Settings
                   </Link>
                   
                   <button
@@ -349,7 +418,7 @@ const FreelanceNavbar = () => {
                   </Link>
                   <Link to="/auth?mode=signup" onClick={() => setIsMenuOpen(false)}>
                     <Button className="w-full glow-primary gap-2">
-                      <UserRoundPlus className="h-4 w-4" />  {/* Fixed: Changed from UserPlus */}
+                      <UserRoundPlus className="h-4 w-4" />
                       Get started
                     </Button>
                   </Link>
