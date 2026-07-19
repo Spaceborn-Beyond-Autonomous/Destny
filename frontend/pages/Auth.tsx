@@ -6,13 +6,60 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, ArrowRight, Chrome, Github, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { authService } from "@/services/auth.service";
+
+const flowConfig = {
+  printing: {
+    title: "3D Printing Login",
+    signupTitle: "Create 3D Printing Account",
+    description: "Sign in to upload files, get quotes, and manage 3D printing orders.",
+    signupDescription: "Create a dedicated account for 3D printing quotes and orders.",
+    accountType: "printing",
+    backTo: "/",
+    secureLabel: "3D printing account",
+  },
+  hire: {
+    title: "Hire Freelancer Login",
+    signupTitle: "Create Hiring Account",
+    description: "Sign in to post jobs, review proposals, and manage freelancer contracts.",
+    signupDescription: "Create a dedicated client account for hiring freelancers.",
+    accountType: "client",
+    backTo: "/freelance",
+    secureLabel: "client hiring account",
+  },
+  freelancer: {
+    title: "Freelancer Login",
+    signupTitle: "Apply as Freelancer",
+    description: "Sign in to browse jobs, send proposals, and manage your freelancer profile.",
+    signupDescription: "Create a dedicated freelancer account to apply for work.",
+    accountType: "freelancer",
+    backTo: "/freelance",
+    secureLabel: "freelancer account",
+  },
+  default: {
+    title: "Welcome Back",
+    signupTitle: "Create Account",
+    description: "Sign in to your Destny account.",
+    signupDescription: "Create your Destny account.",
+    accountType: "general",
+    backTo: "/",
+    secureLabel: "secure account",
+  },
+} as const;
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const mode = searchParams.get('mode') || 'login';
-  const redirect = searchParams.get('redirect') || '/freelance';
+  const flow = searchParams.get('flow') || 'default';
+  const config = flowConfig[(flow as keyof typeof flowConfig)] || flowConfig.default;
+  const defaultRedirect =
+    flow === 'printing' ? '/3d-printing' :
+    flow === 'hire' ? '/freelance/dashboard' :
+    flow === 'freelancer' ? '/freelance/freelancer-dashboard' :
+    '/orders';
+  const redirect = searchParams.get('redirect') || defaultRedirect;
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,119 +75,101 @@ const Auth = () => {
     setIsLogin(mode === 'login');
   }, [mode]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    authService
+      .getCurrentUser(true)
+      .then(() => {
+        if (mounted) {
+          navigate(redirect, { replace: true });
+        }
+      })
+      .catch(() => {
+        // Not logged in yet; show the auth form.
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [navigate, redirect]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (!isLogin && password !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // ✅ ALWAYS ACCEPT - Mock successful login/signup
     try {
-      // Create user data
-      const userData = {
-        id: '1',
-        name: isLogin ? email.split('@')[0] : fullName || email.split('@')[0],
-        email: email,
-        role: 'client',
-        avatar: (isLogin ? email.split('@')[0] : fullName || email.split('@')[0])
-          .split(' ')
-          .map((n: string) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2)
+      if (!isLogin && password !== confirmPassword) {
+        setError("Passwords do not match");
+        toast({
+          title: "Error",
+          description: "Passwords do not match",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const scopedAccountType = flow === 'default' ? undefined : config.accountType;
+      const credentials = {
+        email: email.trim(),
+        password,
+        ...(isLogin ? {} : { name: fullName.trim() }),
+        ...(scopedAccountType ? { accountType: scopedAccountType } : {}),
       };
 
-      // Store user data in localStorage
-      localStorage.setItem('auth_token', 'mock_token_' + Date.now());
-      localStorage.setItem('user_data', JSON.stringify(userData));
-      
-      toast({
-        title: isLogin ? "Welcome back! 👋" : "Account created! 🎉",
-        description: isLogin 
-          ? `Logged in as ${userData.name}` 
-          : `Welcome ${userData.name}! Your account has been created.`,
-      });
-      
-      // Redirect to the intended page (dashboard if coming from Post a Job)
-      navigate(redirect);
+      if (isLogin) {
+        // Backend sets httpOnly cookies; we don't store mock tokens.
+        // Auth API expects /api/v1/users/loginUser (see backend routes).
+        await authService.login({
+          email: credentials.email,
+          password: credentials.password,
+          accountType: scopedAccountType,
+        });
+        toast({
+          title: "Welcome back! 👋",
+          description: "Logged in successfully.",
+        });
+      } else {
+        if (!fullName.trim()) {
+          setError("Full name is required");
+          return;
+        }
+        await authService.signup({
+          name: fullName.trim(),
+          email: credentials.email,
+          password: credentials.password,
+          accountType: scopedAccountType || config.accountType,
+        });
+        toast({
+          title: "Account created! 🎉",
+          description: "Your account was created successfully.",
+        });
+      }
+
+      navigate(redirect, { replace: true });
     } catch (err: any) {
-      setError("Something went wrong. Please try again.");
+      const message = err?.response?.data?.message || err?.message || "Something went wrong. Please try again.";
+      setError(message);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive"
+        description: message,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Mock Google login - always successful
-    setLoading(true);
-    setTimeout(() => {
-      const userData = {
-        id: 'google_' + Date.now(),
-        name: 'Google User',
-        email: 'user@gmail.com',
-        role: 'client',
-        avatar: 'GU'
-      };
-      localStorage.setItem('auth_token', 'google_mock_token_' + Date.now());
-      localStorage.setItem('user_data', JSON.stringify(userData));
-      toast({
-        title: "Welcome! 👋",
-        description: "Logged in with Google successfully",
-      });
-      navigate(redirect);
-      setLoading(false);
-    }, 800);
-  };
-
-  const handleGithubLogin = () => {
-    // Mock GitHub login - always successful
-    setLoading(true);
-    setTimeout(() => {
-      const userData = {
-        id: 'github_' + Date.now(),
-        name: 'GitHub User',
-        email: 'user@github.com',
-        role: 'client',
-        avatar: 'GU'
-      };
-      localStorage.setItem('auth_token', 'github_mock_token_' + Date.now());
-      localStorage.setItem('user_data', JSON.stringify(userData));
-      toast({
-        title: "Welcome! 👋",
-        description: "Logged in with GitHub successfully",
-      });
-      navigate(redirect);
-      setLoading(false);
-    }, 800);
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Link 
-          to="/" 
+          to={config.backTo}
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
-          Back to home
+          Back
         </Link>
         
         <motion.div
@@ -160,15 +189,15 @@ const Auth = () => {
                 </div>
               </div>
               <CardTitle className="text-2xl font-display">
-                {isLogin ? "Welcome Back" : "Create Account"}
+                {isLogin ? config.title : config.signupTitle}
               </CardTitle>
               <CardDescription>
                 {isLogin 
-                  ? "Sign in to your Destny Freelance account" 
-                  : "Join Destny Freelance Marketplace"}
+                  ? config.description 
+                  : config.signupDescription}
               </CardDescription>
-              <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5">
-                🔧 Demo Mode: Any credentials will work
+              <div className="mt-2 text-xs text-muted-foreground bg-muted/30 border border-border rounded-lg px-3 py-1.5">
+                {config.secureLabel}
               </div>
             </CardHeader>
             
@@ -231,7 +260,7 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)} 
                       className="pl-10 pr-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all"
                       required 
-                      minLength={3} 
+                      minLength={8} 
                     />
                     <button
                       type="button"
@@ -242,7 +271,7 @@ const Auth = () => {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Any password works in demo mode
+                    Use at least 8 characters
                   </p>
                 </div>
                 
@@ -261,7 +290,7 @@ const Auth = () => {
                         onChange={(e) => setConfirmPassword(e.target.value)} 
                         className="pl-10 pr-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all"
                         required={!isLogin} 
-                        minLength={3} 
+                        minLength={8} 
                       />
                       <button
                         type="button"
@@ -279,7 +308,7 @@ const Auth = () => {
                     <button 
                       type="button"
                       className="text-xs text-primary hover:underline"
-                      onClick={() => toast({ title: "Reset Password", description: "Password reset link sent to your email (Demo)" })}
+                      onClick={() => toast({ title: "Reset Password", description: "Password reset is not enabled yet." })}
                     >
                       Forgot password?
                     </button>
@@ -306,43 +335,13 @@ const Auth = () => {
                 </Button>
               </form>
               
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border/50"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 gap-2 border-border/50 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                  onClick={handleGoogleLogin}
-                  disabled={loading}
-                >
-                  <Chrome className="h-4 w-4" />
-                  Google
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1 gap-2 border-border/50 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                  onClick={handleGithubLogin}
-                  disabled={loading}
-                >
-                  <Github className="h-4 w-4" />
-                  GitHub
-                </Button>
-              </div>
-              
               <div className="text-center mt-6">
                 <p className="text-sm text-muted-foreground">
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
                   <button
                     onClick={() => {
                       setIsLogin(!isLogin);
-                      navigate(`/auth?mode=${isLogin ? 'signup' : 'login'}`);
+                      navigate(`/auth?flow=${flow}&mode=${isLogin ? 'signup' : 'login'}&redirect=${encodeURIComponent(redirect)}`);
                     }}
                     className="text-primary font-semibold hover:underline"
                   >
@@ -350,7 +349,7 @@ const Auth = () => {
                   </button>
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Demo: Use any email and password (min 3 characters)
+                  Use your real email and password.
                 </p>
               </div>
             </CardContent>

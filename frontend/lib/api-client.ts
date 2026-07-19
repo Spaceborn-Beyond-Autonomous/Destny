@@ -1,5 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, ApiError } from '@/types/freelance';
+import { ApiResponse } from '@/types/freelance';
+
+const getBaseUrl = () => {
+  const raw = import.meta.env.VITE_BACKEND_URL || 'https://destny.onrender.com';
+  return String(raw).replace(/\/+$/, '').replace(/\/api(?:\/v1)?$/, '');
+};
+
+export const API_BASE_URL = getBaseUrl();
 
 class ApiClient {
   private client: AxiosInstance;
@@ -7,7 +14,7 @@ class ApiClient {
 
   private constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_BACKEND_URL || 'https://destny.onrender.com/api',
+      baseURL: API_BASE_URL,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -15,18 +22,6 @@ class ApiClient {
       },
       withCredentials: true,
     });
-
-    // Request interceptor
-    this.client.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
 
     // Response interceptor
     this.client.interceptors.response.use(
@@ -36,7 +31,6 @@ class ApiClient {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('user_data');
-          window.location.href = '/auth';
         }
         return Promise.reject(error);
       }

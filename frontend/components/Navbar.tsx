@@ -3,8 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authService } from "@/services/auth.service";
 import destnyLogo from "@/assets/destny-logo.png";
-import axios from "axios";
 
 const navItems = [
   { label: "About", href: "/#about" },
@@ -23,27 +23,23 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/current-user`, {
-        withCredentials: true,
-      })
-      .then((res) => {
+    const checkAuth = async () => {
+      try {
+        const me = await authService.getCurrentUser(true);
         setIsLoggedIn(true);
-        setIsAdmin(res.data?.data?.admin === true);
-      })
-      .catch(() => {
+        setIsAdmin((me as any)?.admin === true || (me as any)?.role === 'admin');
+      } catch {
         setIsLoggedIn(false);
         setIsAdmin(false);
-      });
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`,
-        {},
-        { withCredentials: true }
-      );
+      await authService.logout();
     } catch {
       // even if the request fails, clear local state
     }

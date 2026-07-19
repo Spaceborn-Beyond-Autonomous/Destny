@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 interface PostJobDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onPost: (jobData: any) => Promise<void>;
+  onPost: (jobData: any) => Promise<unknown>;
 }
 
 const categories = [
@@ -34,7 +34,7 @@ const categories = [
   'Other'
 ];
 
-const jobTypes = ['Fixed', 'Hourly', 'Range'];
+const jobTypes = ['Fixed', 'Hourly', 'Milestone'];
 
 const PostJobDialog: React.FC<PostJobDialogProps> = ({ isOpen, onClose, onPost }) => {
   const { toast } = useToast();

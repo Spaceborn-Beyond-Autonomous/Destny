@@ -1,8 +1,19 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { ArrowRight, Briefcase, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const FreelanceCTA: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleHire = () => {
+    navigate('/auth?flow=hire&mode=login&redirect=/freelance/dashboard');
+  };
+
+  const handleApply = () => {
+    navigate('/auth?flow=freelancer&mode=login&redirect=/freelance/freelancer-dashboard');
+  };
+
   return (
     <section className="py-16 px-6 bg-background">
       <div className="container mx-auto max-w-5xl">
@@ -22,7 +33,7 @@ const FreelanceCTA: React.FC = () => {
             <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
               Describe your project, set your budget, and start receiving proposals from qualified freelancers within hours.
             </p>
-            <Button size="lg" className="glow-primary gap-2">
+            <Button size="lg" className="glow-primary gap-2" onClick={handleHire}>
               Hire a freelancer <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -37,7 +48,7 @@ const FreelanceCTA: React.FC = () => {
             <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
               Apply to projects that match your skills. Build your reputation, grow your portfolio, and get paid on time — always.
             </p>
-            <Button size="lg" variant="outline" className="gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/60">
+            <Button size="lg" variant="outline" className="gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/60" onClick={handleApply}>
               Apply as freelancer <ArrowRight className="h-4 w-4" />
             </Button>
           </div>

@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import FreelanceNavbar from "../components/freelance/FreelanceNavbar";
 import Footer from "../components/Footer";
 import { useJobs } from "../hooks/useJobs";
+import { useToast } from "@/hooks/use-toast";
+import { authService } from "@/services/auth.service";
 
 const categories = ['All', '3D Printing', 'AI Automation', 'MVP Dev', 'Drone Software', 'Design', 'Other'];
 
 const FreelanceJobs = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const { jobs, loading, error, fetchJobs, loadMore, pagination } = useJobs({
@@ -23,6 +26,19 @@ const FreelanceJobs = () => {
     if (searchQuery) filters.search = searchQuery;
     fetchJobs(filters);
   }, [selectedCategory, searchQuery]);
+
+  const handleApply = async () => {
+    try {
+      await authService.getCurrentUser(true);
+      navigate('/freelance/freelancer-dashboard');
+    } catch {
+      toast({
+        title: "Freelancer login required",
+        description: "Use your account to apply to jobs.",
+      });
+      navigate('/auth?flow=freelancer&mode=login&redirect=/freelance/freelancer-dashboard');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +85,7 @@ const FreelanceJobs = () => {
                     className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
                   />
                 </div>
-                <Button variant="outline" size="sm" className="gap-2 border-border hover:border-primary/30">
+                <Button variant="outline" size="sm" className="gap-2 border-border hover:border-primary/30" onClick={() => fetchJobs()}>
                   <Filter className="h-4 w-4" />
                   Filter
                 </Button>
@@ -162,7 +178,7 @@ const FreelanceJobs = () => {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border">
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
@@ -176,6 +192,10 @@ const FreelanceJobs = () => {
                       <span className="text-xs text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full">
                         {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Recent'}
                       </span>
+                      <Button size="sm" className="gap-2 glow-primary" onClick={handleApply}>
+                        <Briefcase className="h-4 w-4" />
+                        Apply
+                      </Button>
                     </div>
                   </motion.div>
                 ))}

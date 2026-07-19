@@ -7,26 +7,23 @@ import {
   Briefcase, 
   Users, 
   LogIn, 
-  UserRoundPlus,
   ChevronDown,
-  Home,
-  User,
-  Settings,
   LogOut,
-  LayoutDashboard,
-  PlusCircle
+  LayoutDashboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { authService } from "@/services/auth.service";
 import destnyLogo from "@/assets/destny-logo.png";
-import axios from "axios";
 
 interface User {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   email: string;
   role?: string;
   avatar?: string;
+  accountType?: string;
 }
 
 const FreelanceNavbar = () => {
@@ -41,37 +38,16 @@ const FreelanceNavbar = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
+      setLoading(true);
       try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          setIsLoggedIn(false);
-          setLoading(false);
-          return;
-        }
-
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/current-user`,
-          {
-            withCredentials: true,
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-
-        if (response.data?.data) {
-          setIsLoggedIn(true);
-          setUser(response.data.data);
-        } else {
-          setIsLoggedIn(false);
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_data');
-        }
+        const me = await authService.getCurrentUser(true);
+        setIsLoggedIn(true);
+        setUser(me);
       } catch (error) {
         console.error('Auth check failed:', error);
         setIsLoggedIn(false);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
+        setUser(null);
+        authService.clearSession();
       } finally {
         setLoading(false);
       }
@@ -82,16 +58,10 @@ const FreelanceNavbar = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`,
-        {},
-        { withCredentials: true }
-      );
+      await authService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
       setIsLoggedIn(false);
       setUser(null);
       setIsProfileOpen(false);
@@ -99,25 +69,7 @@ const FreelanceNavbar = () => {
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
-      navigate('/auth');
-    }
-  };
-
-  const handlePostJob = () => {
-    // Check if user is logged in
-    const token = localStorage.getItem('auth_token');
-    
-    if (!token) {
-      // Not logged in - redirect to login with redirect parameter
-      toast({
-        title: "Please login first",
-        description: "You need to be logged in to post a job.",
-        variant: "destructive",
-      });
-      navigate('/auth?mode=login&redirect=/freelance/dashboard');
-    } else {
-      // Logged in - go to dashboard
-      navigate('/freelance/dashboard');
+      navigate('/freelance');
     }
   };
 
@@ -144,6 +96,11 @@ const FreelanceNavbar = () => {
       icon: <Users className="h-4 w-4" />
     },
   ];
+
+  const dashboardPath = user?.accountType === 'freelancer'
+    ? '/freelance/freelancer-dashboard'
+    : '/freelance/dashboard';
+  const dashboardLabel = user?.accountType === 'freelancer' ? 'Freelancer Dashboard' : 'Hire Dashboard';
 
   return (
     <motion.nav
@@ -186,31 +143,21 @@ const FreelanceNavbar = () => {
           ))}
           {isLoggedIn && (
             <Link
-              to="/freelance/dashboard"
+              to={dashboardPath}
               className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                isActive('/freelance/dashboard')
+                isActive(dashboardPath)
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <LayoutDashboard className="h-4 w-4" />
-              Dashboard
+              {dashboardLabel}
             </Link>
           )}
         </div>
 
         {/* Right side buttons */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Post a Job Button */}
-          <Button 
-            size="sm" 
-            className="glow-primary gap-2"
-            onClick={handlePostJob}
-          >
-            <PlusCircle className="h-4 w-4" />
-            Post a Job
-          </Button>
-
           {loading ? (
             <div className="w-20 h-9 bg-muted/30 rounded-full animate-pulse"></div>
           ) : isLoggedIn && user ? (
@@ -244,30 +191,12 @@ const FreelanceNavbar = () => {
                     </div>
                     
                     <Link
-                      to="/freelance/dashboard"
+                      to={dashboardPath}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
-                    </Link>
-                    
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <User className="h-4 w-4" />
-                      Profile
-                    </Link>
-                    
-                    <Link
-                      to="/settings"
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Settings
+                      {dashboardLabel}
                     </Link>
                     
                     <div className="border-t border-border mt-1 pt-1">
@@ -284,20 +213,59 @@ const FreelanceNavbar = () => {
               </AnimatePresence>
             </div>
           ) : (
-            <>
-              <Link to="/auth">
-                <Button variant="outline" size="sm" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Button>
-              </Link>
-              <Link to="/auth?mode=signup">
-                <Button size="sm" className="glow-primary gap-2">
-                  <UserRoundPlus className="h-4 w-4" />
-                  Get started
-                </Button>
-              </Link>
-            </>
+            <div className="relative">
+              <button
+                onClick={() => setIsProfileOpen((v) => !v)}
+                className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-muted/30 transition-colors border border-primary/20"
+                aria-haspopup="menu"
+                aria-expanded={isProfileOpen}
+              >
+                <LogIn className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary hidden sm:inline">Dashboard</span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${
+                  isProfileOpen ? 'rotate-180' : ''
+                }`} />
+              </button>
+
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute right-0 mt-2 w-64 glass-strong rounded-xl border border-border shadow-xl py-2"
+                    role="menu"
+                  >
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="font-semibold text-foreground text-sm">Continue as</p>
+                      <p className="text-xs text-muted-foreground">Choose your dashboard type</p>
+                    </div>
+
+                    <button
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors w-full text-left"
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        navigate('/auth?flow=hire&mode=login&redirect=/freelance/dashboard');
+                      }}
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Hire a freelancer
+                    </button>
+
+                    <button
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors w-full text-left"
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        navigate('/auth?flow=freelancer&mode=login&redirect=/freelance/freelancer-dashboard');
+                      }}
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Apply as freelancer
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           )}
         </div>
 
@@ -340,32 +308,20 @@ const FreelanceNavbar = () => {
               
               {isLoggedIn && (
                 <Link
-                  to="/freelance/dashboard"
+                  to={dashboardPath}
                   onClick={() => setIsMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    isActive('/freelance/dashboard')
+                    isActive(dashboardPath)
                       ? 'text-primary bg-primary/5'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
                   }`}
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  {dashboardLabel}
                 </Link>
               )}
 
               <div className="border-t border-border/50 my-2"></div>
-
-              {/* Post a Job - Mobile */}
-              <button
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handlePostJob();
-                }}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Post a Job
-              </button>
 
               {/* Auth Section */}
               {loading ? (
@@ -379,24 +335,6 @@ const FreelanceNavbar = () => {
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/10 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Link>
-                  
-                  <Link
-                    to="/settings"
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/10 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                  
                   <button
                     onClick={() => {
                       setIsMenuOpen(false);
@@ -409,20 +347,17 @@ const FreelanceNavbar = () => {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                    <Button variant="outline" className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/10">
-                      <LogIn className="h-4 w-4" />
-                      Login
-                    </Button>
-                  </Link>
-                  <Link to="/auth?mode=signup" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full glow-primary gap-2">
-                      <UserRoundPlus className="h-4 w-4" />
-                      Get started
-                    </Button>
-                  </Link>
-                </>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    navigate('/auth?flow=hire&mode=login&redirect=/freelance/dashboard');
+                  }}
+                >
+                  <LogIn className="h-4 w-4" />
+                  Hire Dashboard
+                </Button>
               )}
             </div>
           </motion.div>

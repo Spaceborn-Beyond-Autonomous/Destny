@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Star, MapPin, Briefcase, Mail, Calendar, Filter, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FreelanceNavbar from "../components/freelance/FreelanceNavbar";
 import Footer from "../components/Footer";
 import { useFreelancers } from "../hooks/useFreelancers";
+import { useToast } from "@/hooks/use-toast";
 
 const FreelanceFreelancers = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const { freelancers, loading, error, fetchFreelancers, loadMore, pagination } = useFreelancers({
     limit: 6,
   });
@@ -19,6 +21,19 @@ const FreelanceFreelancers = () => {
     if (searchQuery) filters.search = searchQuery;
     fetchFreelancers(filters);
   }, [searchQuery]);
+
+  const { toast } = useToast();
+
+  const handleHire = () => {
+    toast({
+      title: "Client login required",
+      description: "Use your hiring account to contact or hire freelancers.",
+    });
+    navigate('/auth?flow=hire&mode=login&redirect=/freelance/dashboard');
+  };
+
+  const handleContact = handleHire;
+  const handleSchedule = handleHire;
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,24 +177,24 @@ const FreelanceFreelancers = () => {
                           {skill}
                         </span>
                       ))}
-                      {freelancer.skills?.length > 5 && (
+                      {(freelancer.skills?.length || 0) > 5 && (
                         <span className="text-xs text-muted-foreground px-3 py-1">
-                          +{freelancer.skills.length - 5} more
+                          +{(freelancer.skills?.length || 0) - 5} more
                         </span>
                       )}
                     </div>
 
                     {/* Actions */}
                     <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-border">
-                      <Button size="sm" className="gap-2 glow-primary">
+                      <Button size="sm" className="gap-2 glow-primary" onClick={handleHire}>
                         <Briefcase className="h-4 w-4" />
                         Hire
                       </Button>
-                      <Button size="sm" variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
+                      <Button size="sm" variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10" onClick={handleContact}>
                         <Mail className="h-4 w-4" />
                         Contact
                       </Button>
-                      <Button size="sm" variant="outline" className="gap-2 border-border hover:border-primary/30">
+                      <Button size="sm" variant="outline" className="gap-2 border-border hover:border-primary/30" onClick={handleSchedule}>
                         <Calendar className="h-4 w-4" />
                         Schedule
                       </Button>

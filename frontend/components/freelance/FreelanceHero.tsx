@@ -15,22 +15,12 @@ const FreelanceHero: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handlePostJob = () => {
-    // Check if user is logged in
-    const token = localStorage.getItem('auth_token');
-    
-    if (!token) {
-      // Not logged in - redirect to login with redirect parameter
-      toast({
-        title: "Please login first",
-        description: "You need to be logged in to post a job.",
-        variant: "destructive",
-      });
-      navigate('/auth?mode=login&redirect=/freelance/dashboard');
-    } else {
-      // Logged in - go to dashboard
-      navigate('/freelance/dashboard');
-    }
+  const handleHireFreelancer = () => {
+    toast({
+      title: "Client login required",
+      description: "Use your hiring account to post jobs and hire freelancers.",
+    });
+    navigate('/auth?flow=hire&mode=login&redirect=/freelance/dashboard');
   };
 
   const handleBrowseWork = () => {
@@ -67,10 +57,10 @@ const FreelanceHero: React.FC = () => {
             <Button 
               size="lg" 
               className="glow-primary gap-2"
-              onClick={handlePostJob}
+              onClick={handleHireFreelancer}
             >
               <Briefcase className="h-4 w-4" />
-              Post a Job
+              Hire a Freelancer
             </Button>
             <Button 
               size="lg" 

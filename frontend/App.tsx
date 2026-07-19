@@ -16,8 +16,10 @@ import FreelancePage from "@/pages/FreelancePage";
 import FreelanceJobs from "@/pages/FreelanceJobs";
 import FreelanceFreelancers from "@/pages/FreelanceFreelancers";
 import FreelanceDashboard from "@/pages/FreelanceDashboard";
+import FreelancerDashboard from "@/pages/FreelancerDashboard";
 import AdminRoute from "./components/AdminRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { ChatProvider } from "@/context/ChatContext";
 
 const queryClient = new QueryClient();
 
@@ -45,30 +47,33 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <ScrollToHash />
-        <Routes>
-          {/* Main Routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/3d-printing" element={<ProtectedRoute><Printing3D /></ProtectedRoute>} />
-          <Route path="/auth" element={<Auth />} />
-          
-          {/* Freelance Routes */}
-          <Route path="/freelance" element={<FreelancePage />} />
-          <Route path="/freelance/jobs" element={<FreelanceJobs />} />
-          <Route path="/freelance/freelancers" element={<FreelanceFreelancers />} />
-          <Route path="/freelance/dashboard" element={<FreelanceDashboard />} />
-          
-          {/* Admin Routes */}
-          <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
-          <Route path="/dashboard/customers/:mode/:customerKey/orders" element={<AdminRoute><AdminCustomerOrders /></AdminRoute>} />
-          
-          {/* Protected Routes */}
-          <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-          <Route path="/quotes" element={<ProtectedRoute><YourQuotes /></ProtectedRoute>} />
-          
-          {/* 404 Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <ChatProvider>
+          <ScrollToHash />
+          <Routes>
+            {/* Main Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/3d-printing" element={<ProtectedRoute authPath="/auth?flow=printing&mode=login&redirect=/3d-printing"><Printing3D /></ProtectedRoute>} />
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Freelance Routes */}
+            <Route path="/freelance" element={<FreelancePage />} />
+            <Route path="/freelance/jobs" element={<FreelanceJobs />} />
+            <Route path="/freelance/freelancers" element={<FreelanceFreelancers />} />
+            <Route path="/freelance/dashboard" element={<ProtectedRoute authPath="/auth?flow=hire&mode=login&redirect=/freelance/dashboard"><FreelanceDashboard /></ProtectedRoute>} />
+            <Route path="/freelance/freelancer-dashboard" element={<ProtectedRoute authPath="/auth?flow=freelancer&mode=login&redirect=/freelance/freelancer-dashboard"><FreelancerDashboard /></ProtectedRoute>} />
+            
+            {/* Admin Routes */}
+            <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+            <Route path="/dashboard/customers/:mode/:customerKey/orders" element={<AdminRoute><AdminCustomerOrders /></AdminRoute>} />
+            
+            {/* Protected Routes */}
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/quotes" element={<ProtectedRoute><YourQuotes /></ProtectedRoute>} />
+            
+            {/* 404 Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ChatProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

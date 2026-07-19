@@ -30,6 +30,17 @@ const userSchema = new mongoose.Schema(
     admin: {
         type: Boolean,
         default: false
+    },
+    accountType: {
+        type: String,
+        enum: ["general", "printing", "client", "freelancer"],
+        default: "general",
+        index: true
+    },
+    accountTypes: {
+        type: [String],
+        enum: ["general", "printing", "client", "freelancer"],
+        default: []
     }
   },
   {

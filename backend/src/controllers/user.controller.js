@@ -41,8 +41,31 @@ const generateAccessAndRefreshTokens = async (userId) => {
     }
 };
 
+const validAccountTypes = new Set(["general", "printing", "client", "freelancer"]);
+
+const getAccountType = (value) => {
+    const accountType = String(value || "general").trim();
+    return validAccountTypes.has(accountType) ? accountType : "general";
+};
+
+const setCurrentAccountType = async (user, requestedAccountType) => {
+    if (!requestedAccountType || !validAccountTypes.has(requestedAccountType)) return;
+
+    const accountTypes = new Set([
+        ...(Array.isArray(user.accountTypes) ? user.accountTypes : []),
+        user.accountType || "general",
+    ]);
+
+    accountTypes.add(requestedAccountType);
+    user.accountType = requestedAccountType;
+
+    user.accountTypes = [...accountTypes].filter((accountType) => validAccountTypes.has(accountType));
+    await user.save({ validateBeforeSave: false });
+};
+
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
+    const accountType = getAccountType(req.body.accountType);
 
     if (!name?.trim() || !email?.trim() || !password || typeof password !== "string") {
         throw new ApiError(400, "All fields are required");
@@ -56,9 +79,30 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Password must be at least 8 characters");
     }
 
-    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+    const existingUser = await User.findOne({ email: email.trim().toLowerCase() }).select("+password");
 
     if (existingUser) {
+        if (accountType && validAccountTypes.has(accountType)) {
+            const isPasswordValid = await existingUser.isPasswordCorrect(password);
+
+            if (!isPasswordValid) {
+                throw new ApiError(401, "Invalid credentials");
+            }
+
+            await setCurrentAccountType(existingUser, accountType);
+
+            const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(existingUser._id);
+            const loggedInUser = await User.findById(existingUser._id).select("-password -refreshToken");
+            const accessMaxAge = parseExpiry(process.env.ACCESS_TOKEN_EXPIRY);
+            const refreshMaxAge = parseExpiry(process.env.REFRESH_TOKEN_EXPIRY);
+
+            return res
+                .status(200)
+                .cookie("accessToken", accessToken, getCookieOptions(accessMaxAge))
+                .cookie("refreshToken", refreshToken, getCookieOptions(refreshMaxAge))
+                .json(new ApiResponse(200, { user: loggedInUser }, "User logged in successfully"));
+        }
+
         throw new ApiError(400, "User already exists");
     }
 
@@ -66,6 +110,8 @@ const registerUser = asyncHandler(async (req, res) => {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
+        accountType,
+        accountTypes: [accountType],
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -74,13 +120,20 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create user");
     }
 
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+    const accessMaxAge = parseExpiry(process.env.ACCESS_TOKEN_EXPIRY);
+    const refreshMaxAge = parseExpiry(process.env.REFRESH_TOKEN_EXPIRY);
+
     return res
         .status(201)
-        .json(new ApiResponse(201, createdUser, "User registered successfully"));
+        .cookie("accessToken", accessToken, getCookieOptions(accessMaxAge))
+        .cookie("refreshToken", refreshToken, getCookieOptions(refreshMaxAge))
+        .json(new ApiResponse(201, { user: createdUser }, "User registered successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    const requestedAccountType = req.body.accountType ? getAccountType(req.body.accountType) : null;
 
     if (!email?.trim()) {
         throw new ApiError(400, "Email is required");
@@ -107,6 +160,8 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid credentials");
     }
+
+    await setCurrentAccountType(user, requestedAccountType);
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 

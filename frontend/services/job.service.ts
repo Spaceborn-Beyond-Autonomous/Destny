@@ -1,5 +1,26 @@
 import { apiClient } from '@/lib/api-client';
-import { Job, JobFilters, PaginatedResponse } from '@/types/freelance';
+
+// Keep this service compile-time independent from missing frontend type files.
+// The backend response is treated as `any` to avoid false/mock fallback data.
+
+export type JobFilters = {
+  search?: string;
+  category?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
+export type Job = any;
 
 class JobService {
   async getJobs(filters?: JobFilters): Promise<PaginatedResponse<Job>> {
@@ -7,28 +28,37 @@ class JobService {
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            value.forEach(v => params.append(key, v));
-          } else {
-            params.append(key, String(value));
-          }
+          params.append(key, String(value));
         }
       });
     }
-    
-    return await apiClient.get<PaginatedResponse<Job>>(`/api/v1/jobs?${params.toString()}`);
+
+    return apiClient.get<PaginatedResponse<Job>>(`/api/v1/jobs?${params.toString()}`);
+  }
+
+  async getMyJobs(filters?: Pick<JobFilters, 'page' | 'limit'> & { clientKey?: string }): Promise<PaginatedResponse<Job>> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+
+    return apiClient.get<PaginatedResponse<Job>>(`/api/v1/jobs/mine?${params.toString()}`);
   }
 
   async getJob(id: string): Promise<Job> {
-    return await apiClient.get<Job>(`/api/v1/jobs/${id}`);
+    return apiClient.get<Job>(`/api/v1/jobs/${id}`);
   }
 
   async createJob(data: Partial<Job>): Promise<Job> {
-    return await apiClient.post<Job>('/api/v1/jobs', data);
+    return apiClient.post<Job>('/api/v1/jobs', data);
   }
 
   async updateJob(id: string, data: Partial<Job>): Promise<Job> {
-    return await apiClient.put<Job>(`/api/v1/jobs/${id}`, data);
+    return apiClient.put<Job>(`/api/v1/jobs/${id}`, data);
   }
 
   async deleteJob(id: string): Promise<void> {
@@ -36,21 +66,40 @@ class JobService {
   }
 
   async searchJobs(query: string): Promise<PaginatedResponse<Job>> {
-    return await apiClient.get<PaginatedResponse<Job>>(
+    return apiClient.get<PaginatedResponse<Job>>(
       `/api/v1/jobs/search?q=${encodeURIComponent(query)}`
     );
   }
 
-  async applyToJob(jobId: string, proposal: string, rate: number): Promise<void> {
-    await apiClient.post(`/api/v1/jobs/${jobId}/apply`, { proposal, rate });
+  async applyToJob(
+    jobId: string,
+    proposal: string,
+    rate: number,
+    applicant?: { name?: string; freelancerKey?: string; freelancerId?: string }
+  ): Promise<void> {
+    await apiClient.post(`/api/v1/jobs/${jobId}/apply`, {
+      proposal,
+      rate,
+      applicantName: applicant?.name,
+      freelancerKey: applicant?.freelancerKey,
+      freelancerId: applicant?.freelancerId,
+    });
+  }
+
+  async acceptProposal(jobId: string, applicationId: string): Promise<any> {
+    return apiClient.post(`/api/v1/jobs/${jobId}/accept`, { applicationId });
+  }
+
+  async declineProposal(jobId: string, applicationId: string): Promise<any> {
+    return apiClient.post(`/api/v1/jobs/${jobId}/applications/${applicationId}/decline`);
   }
 
   async getJobApplications(jobId: string): Promise<any[]> {
-    return await apiClient.get<any[]>(`/api/v1/jobs/${jobId}/applications`);
+    return apiClient.get<any[]>(`/api/v1/jobs/${jobId}/applications`);
   }
 
   async getJobCategories(): Promise<string[]> {
-    return await apiClient.get<string[]>('/api/v1/jobs/categories');
+    return apiClient.get<string[]>('/api/v1/jobs/categories');
   }
 }
 
