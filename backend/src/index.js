@@ -19,9 +19,13 @@ connectDB()
         })
         const server = http.createServer(app);
         const origin = process.env.CLIENT_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
+        const allowedOrigins = origin
+            .split(",")
+            .map((item) => item.trim().replace(/\/$/, ""))
+            .filter(Boolean);
         const io = new Server(server, {
             cors: {
-                origin: origin.replace(/\/$/, ""),
+                origin: allowedOrigins,
                 credentials: true,
             },
         });
@@ -29,6 +33,10 @@ connectDB()
         io.use(socketAuthMiddleware);
 
         io.on("connection", (socket) => {
+            if (socket.user?._id) {
+                socket.join(`user:${socket.user._id}`);
+            }
+
             if (socket.user?.admin) {
                 socket.join("admin");
             } else {
@@ -42,16 +50,33 @@ connectDB()
                         socket.join(`quote:${quoteId.trim()}`);
                     }
                 });
+                socket.on("join:freelance-contract", (contractId) => {
+                    if (typeof contractId === "string" && contractId.trim()) {
+                        socket.join(`freelance:contract:${contractId.trim()}`);
+                    }
+                });
             }
         });
 
         setSocketServer(io);
 
-        const PORTT = process.env.PORT || 4000
-        server.listen(PORTT, () => {
+        const PORTT = process.env.PORT || 4000;
+
+        const onListen = () => {
             console.log(`Server running on port ${PORTT}`);
-        })
+        };
+
+        server.on('error', (err) => {
+            if (err?.code === 'EADDRINUSE') {
+                console.error(`Port ${PORTT} is already in use. Stop the existing server and restart.`);
+                process.exit(1);
+            }
+            throw err;
+        });
+
+        server.listen(PORTT, onListen);
     })
     .catch((err) => {
         console.log("Error in connecting to app", err);
     })
+

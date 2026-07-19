@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import axios from "axios";
+import { authService } from "@/services/auth.service";
 
 interface Props {
   children: React.ReactNode;
+  authPath?: string;
 }
 
-const ProtectedRoute = ({ children }: Props) => {
+const ProtectedRoute = ({ children, authPath = "/auth" }: Props) => {
   const [status, setStatus] = useState<"loading" | "authorized" | "not-logged-in">("loading");
 
   useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/current-user`, {
-        withCredentials: true,
-      })
+    authService
+      .getCurrentUser(true)
       .then(() => {
         setStatus("authorized");
       })
@@ -31,7 +30,7 @@ const ProtectedRoute = ({ children }: Props) => {
   }
 
   if (status === "not-logged-in") {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={authPath} replace />;
   }
 
   return <>{children}</>;

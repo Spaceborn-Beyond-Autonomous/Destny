@@ -75,12 +75,16 @@ GDRIVE_FOLDER_ID=replace_with_drive_folder_id
 
 RAZORPAY_KEY_ID=replace_with_razorpay_key_id
 RAZORPAY_KEY_SECRET=replace_with_razorpay_key_secret
+PLATFORM_FEE_PERCENTAGE=15
+PLATFORM_UPI_ID=your-platform-upi-id
 ```
 
 Create a `.env` file in `frontend/`:
 
 ```env
 VITE_BACKEND_URL=http://localhost:4000
+VITE_PLATFORM_FEE_PERCENTAGE=15
+VITE_PLATFORM_UPI_ID=your-platform-upi-id
 ```
 
 ## Getting Started

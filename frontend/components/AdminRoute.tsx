@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import axios from "axios";
+import { authService } from "@/services/auth.service";
 
 interface Props {
   children: React.ReactNode;
@@ -10,12 +10,9 @@ const AdminRoute = ({ children }: Props) => {
   const [status, setStatus] = useState<"loading" | "authorized" | "not-admin" | "not-logged-in">("loading");
 
   useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/current-user`, {
-        withCredentials: true,
-      })
-      .then((res) => {
-        const user = res.data?.data;
+    authService
+      .getCurrentUser(true)
+      .then((user) => {
         if (user?.admin === true) {
           setStatus("authorized");
         } else {

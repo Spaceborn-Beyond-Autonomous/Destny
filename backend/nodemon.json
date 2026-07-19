@@ -1,0 +1,7 @@
+{
+  "watch": ["src"],
+  "ignore": ["node_modules", ".env", "*.log", "public"],
+  "ext": "js",
+  "exec": "node src/index.js",
+  "delay": 500
+}
